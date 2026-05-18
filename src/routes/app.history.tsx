@@ -25,9 +25,11 @@ function HistoryPage() {
       const localUploads = await getUploadsLocal();
       const merged = [...localUploads];
       const localIds = new Set(localUploads.map(u => u.id));
-      for (const u of s.uploads as UploadRow[]) {
-        if (!localIds.has(u.id)) {
-          merged.push(u);
+      if (s && Array.isArray(s.uploads)) {
+        for (const u of s.uploads as UploadRow[]) {
+          if (!localIds.has(u.id)) {
+            merged.push(u);
+          }
         }
       }
       merged.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());

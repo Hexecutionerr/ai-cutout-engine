@@ -35,7 +35,7 @@ export async function triggerRazorpayCheckout(options: TriggerCheckoutOptions) {
     }
 
     // Call server function to create order
-    const orderData = await createCheckoutOrder({ plan });
+    const orderData = await createCheckoutOrder({ data: { plan } });
     
     if (!orderData || 'error' in orderData || !orderData.orderId) {
       const errMsg = (orderData as any)?.error || "Failed to establish secure order connection.";
@@ -57,6 +57,7 @@ export async function triggerRazorpayCheckout(options: TriggerCheckoutOptions) {
       },
       prefill: {
         email: userEmail,
+        contact: "9999999999",
       },
       notes: {
         user_id: userId,

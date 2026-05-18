@@ -28,15 +28,19 @@ function WorkspacePage() {
   const refresh = async () => {
     try {
       const s = await summaryFn();
-      setCredits(s.credits);
+      if (s && typeof s.credits === 'number') {
+        setCredits(s.credits);
+      }
       
       const localUploads = await getUploadsLocal();
       const merged = [...localUploads];
       const localIds = new Set(localUploads.map(u => u.id));
-      for (const u of s.uploads as UploadRow[]) {
-        if (!localIds.has(u.id)) {
-          merged.push(u);
-          saveUploadLocal(u).catch(console.error); // sync to local
+      if (s && Array.isArray(s.uploads)) {
+        for (const u of s.uploads as UploadRow[]) {
+          if (!localIds.has(u.id)) {
+            merged.push(u);
+            saveUploadLocal(u).catch(console.error); // sync to local
+          }
         }
       }
       merged.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -111,7 +115,7 @@ function WorkspacePage() {
       <header className="flex items-center justify-between">
         <div className="glass-card flex items-center gap-2 rounded-full px-4 py-2 text-sm">
           <Sparkles className="h-4 w-4 text-primary" />
-          <span className="font-semibold">{credits.toLocaleString()}</span>
+          <span className="font-semibold">{(credits ?? 0).toLocaleString()}</span>
           <span className="text-muted-foreground">Credits Remaining</span>
         </div>
         {/* Sign out hidden — public access mode */}
@@ -169,7 +173,7 @@ function WorkspacePage() {
           <div className="glass-card rounded-2xl p-5">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Credits</p>
             <div className="mt-3 flex items-baseline gap-2">
-              <span className="font-display text-3xl font-bold">{credits.toLocaleString()}</span>
+              <span className="font-display text-3xl font-bold">{(credits ?? 0).toLocaleString()}</span>
               <span className="text-sm text-muted-foreground">remaining</span>
             </div>
             <Button asChild variant="outline" className="mt-4 w-full rounded-xl border-white/10 bg-white/5"><Link to="/app/billing">Upgrade Plan</Link></Button>

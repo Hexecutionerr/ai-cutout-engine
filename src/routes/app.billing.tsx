@@ -113,12 +113,18 @@ function BillingPage() {
               </thead>
               <tbody>
                 {payments.map((p) => {
-                  const dateStr = new Date(p.created_at).toLocaleDateString("en-IN", {
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric'
-                  });
-                  const invId = `INV-${new Date(p.created_at).getFullYear()}-${p.id.slice(0, 4).toUpperCase()}`;
+                  if (!p) return null;
+                  const dateStr = p.created_at 
+                    ? new Date(p.created_at).toLocaleDateString("en-IN", {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric'
+                      })
+                    : "Unknown Date";
+                  const pId = p.id || "";
+                  const invId = p.created_at 
+                    ? `INV-${new Date(p.created_at).getFullYear()}-${pId.slice(0, 4).toUpperCase()}`
+                    : "INV-TEMP";
                   
                   return (
                     <tr key={p.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
