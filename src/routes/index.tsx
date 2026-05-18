@@ -204,7 +204,7 @@ function PricingPreview() {
   const PLANS = [
     {
       name: "Starter",
-      price: "$0",
+      price: "₹0",
       period: "/mo",
       desc: "For hobbyists and casual creators.",
       features: ["5 images / month", "Standard quality", "Personal use only"],
@@ -213,7 +213,7 @@ function PricingPreview() {
     },
     {
       name: "Pro Plan",
-      price: "$24",
+      price: "₹99",
       period: "/mo",
       desc: "For professional designers and studios.",
       features: [
@@ -228,7 +228,7 @@ function PricingPreview() {
     },
     {
       name: "Business",
-      price: "$99",
+      price: "₹199",
       period: "/mo",
       desc: "For large-scale production teams.",
       features: ["Everything in Pro", "Priority GPU Queue", "Custom Workflows", "Dedicated Manager"],

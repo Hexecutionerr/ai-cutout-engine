@@ -20,7 +20,7 @@ const PLANS = [
   {
     label: "STARTER",
     name: "Free",
-    price: "$0",
+    price: "₹0",
     sub: "forever",
     desc: "Perfect for personal projects and exploring the AI capabilities.",
     cta: "Start Free",
@@ -30,7 +30,7 @@ const PLANS = [
   {
     label: "SUBSCRIPTION",
     name: "Pro",
-    price: "$29",
+    price: "₹99",
     sub: "/month",
     desc: "Built for professional creators who need high-volume, HD output.",
     cta: "Get Pro Access",
@@ -46,7 +46,7 @@ const PLANS = [
   {
     label: "PAY AS YOU GO",
     name: "Credits",
-    price: "$9",
+    price: "₹29",
     sub: "/50 credits",
     desc: "Credits never expire. Top up whenever your workflow demands it.",
     cta: "Buy Credits",
