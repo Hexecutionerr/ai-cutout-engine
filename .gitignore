@@ -33,3 +33,4 @@ dist-ssr
 
 # Output directories
 processed_images/
+.vercel
