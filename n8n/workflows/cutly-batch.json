@@ -1,0 +1,54 @@
+{
+  "name": "Cutly AI — Batch Background Removal",
+  "nodes": [
+    {
+      "parameters": { "path": "cutly-batch", "options": {} },
+      "id": "webhook",
+      "name": "Webhook (start)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://project--224d401b-23d7-48f3-96b0-485512dbe08d.lovable.app/api/public/v1/remove-bg",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "Authorization", "value": "Bearer {{$env.CUTLY_API_KEY}}" },
+          { "name": "Content-Type", "value": "application/json" }
+        ]},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"image_url\": \"{{$json.image_url}}\"}"
+      },
+      "id": "remove-bg",
+      "name": "Cutly Remove BG",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [520, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://project--224d401b-23d7-48f3-96b0-485512dbe08d.lovable.app/api/public/webhooks/n8n",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "x-n8n-secret", "value": "={{$env.N8N_WEBHOOK_SECRET}}" }
+        ]},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"event\":\"batch_done\",\"result\": {{$json}} }"
+      },
+      "id": "callback",
+      "name": "Notify Cutly",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [800, 300]
+    }
+  ],
+  "connections": {
+    "Webhook (start)": { "main": [[{ "node": "Cutly Remove BG", "type": "main", "index": 0 }]] },
+    "Cutly Remove BG": { "main": [[{ "node": "Notify Cutly", "type": "main", "index": 0 }]] }
+  }
+}
