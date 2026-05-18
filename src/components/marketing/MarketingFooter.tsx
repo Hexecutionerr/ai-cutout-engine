@@ -1,3 +1,5 @@
+import { Link } from "@tanstack/react-router";
+
 export function MarketingFooter() {
   return (
     <footer className="border-t border-white/5 py-10">
@@ -11,11 +13,11 @@ export function MarketingFooter() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-6 text-xs text-muted-foreground">
-          <a href="/legal/privacy" className="hover:text-foreground">Privacy Policy</a>
-          <a href="/legal/terms" className="hover:text-foreground">Terms of Service</a>
-          <a href="/status" className="hover:text-foreground">Status</a>
-          <a href="https://twitter.com" className="hover:text-foreground">Twitter</a>
-          <a href="https://github.com" className="hover:text-foreground">GitHub</a>
+          <Link to="/privacy" className="hover:text-foreground">Privacy Policy</Link>
+          <Link to="/terms" className="hover:text-foreground">Terms & Conditions</Link>
+          <Link to="/refund" className="hover:text-foreground">Refund Policy</Link>
+          <Link to="/shipping" className="hover:text-foreground">Shipping Policy</Link>
+          <Link to="/contact" className="hover:text-foreground">Contact Us</Link>
         </div>
       </div>
     </footer>

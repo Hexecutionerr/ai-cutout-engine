@@ -3,6 +3,8 @@ import { MarketingHeader } from "@/components/marketing/MarketingHeader";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/useAuth";
+import { triggerRazorpayCheckout } from "@/lib/razorpay-checkout";
 import {
   Sparkles,
   Zap,
@@ -201,6 +203,7 @@ function BeforeAfter() {
 }
 
 function PricingPreview() {
+  const { user } = useAuth();
   const PLANS = [
     {
       name: "Starter",
@@ -225,6 +228,7 @@ function PricingPreview() {
       cta: "Go Pro",
       to: "/pricing" as const,
       popular: true,
+      planKey: "pro" as const,
     },
     {
       name: "Business",
@@ -232,8 +236,9 @@ function PricingPreview() {
       period: "/mo",
       desc: "For large-scale production teams.",
       features: ["Everything in Pro", "Priority GPU Queue", "Custom Workflows", "Dedicated Manager"],
-      cta: "Contact Sales",
+      cta: "Go Business",
       to: "/contact" as const,
+      planKey: "business" as const,
     },
   ];
   return (
@@ -272,15 +277,33 @@ function PricingPreview() {
                 </li>
               ))}
             </ul>
-            <Button
-              asChild
-              className={
-                p.popular ? "btn-glow mt-6 w-full rounded-xl" : "mt-6 w-full rounded-xl bg-white/5 hover:bg-white/10"
-              }
-              variant={p.popular ? "default" : "secondary"}
-            >
-              <Link to={p.to}>{p.cta}</Link>
-            </Button>
+            {p.planKey ? (
+              <Button
+                onClick={() => {
+                  triggerRazorpayCheckout({
+                    plan: p.planKey,
+                    userId: user?.id || "00000000-0000-0000-0000-000000000000",
+                    userEmail: user?.email || "guest@cutly.ai",
+                  });
+                }}
+                className={
+                  p.popular ? "btn-glow mt-6 w-full rounded-xl" : "mt-6 w-full rounded-xl bg-white/5 hover:bg-white/10"
+                }
+                variant={p.popular ? "default" : "secondary"}
+              >
+                {p.cta}
+              </Button>
+            ) : (
+              <Button
+                asChild
+                className={
+                  p.popular ? "btn-glow mt-6 w-full rounded-xl" : "mt-6 w-full rounded-xl bg-white/5 hover:bg-white/10"
+                }
+                variant={p.popular ? "default" : "secondary"}
+              >
+                <Link to={p.to}>{p.cta}</Link>
+              </Button>
+            )}
           </div>
         ))}
       </div>

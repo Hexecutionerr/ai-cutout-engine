@@ -3,6 +3,8 @@ import { MarketingHeader } from "@/components/marketing/MarketingHeader";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { Button } from "@/components/ui/button";
 import { Check, Zap, Sparkles, Plug } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { triggerRazorpayCheckout } from "@/lib/razorpay-checkout";
 
 export const Route = createFileRoute("/pricing")({
   head: () => ({
@@ -36,6 +38,7 @@ const PLANS = [
     cta: "Get Pro Access",
     to: "/register" as const,
     popular: true,
+    planKey: "pro" as const,
     features: [
       "200 credits per month",
       "4K Resolution Support",
@@ -51,6 +54,7 @@ const PLANS = [
     desc: "Credits never expire. Top up whenever your workflow demands it.",
     cta: "Buy Credits",
     to: "/register" as const,
+    planKey: "starter" as const, // Maps to our ₹29 Starter Credits Pack
     features: ["No monthly commitment", "Full API access included", "All resolution sizes"],
   },
   {
@@ -71,6 +75,8 @@ const PLANS = [
 ];
 
 function PricingPage() {
+  const { user } = useAuth();
+
   return (
     <div className="min-h-screen bg-background">
       <MarketingHeader />
@@ -113,17 +119,38 @@ function PricingPage() {
               {p.sub && <span className="text-sm text-muted-foreground">{p.sub}</span>}
             </div>
             <p className="mt-3 min-h-[60px] text-sm text-muted-foreground">{p.desc}</p>
-            <Button
-              asChild
-              className={
-                p.popular
-                  ? "btn-glow mt-2 w-full rounded-xl"
-                  : "mt-2 w-full rounded-xl border border-white/10 bg-white/5 hover:bg-white/10"
-              }
-              variant={p.popular ? "default" : "secondary"}
-            >
-              <Link to={p.to}>{p.cta}</Link>
-            </Button>
+            
+            {p.planKey ? (
+              <Button
+                onClick={() => {
+                  triggerRazorpayCheckout({
+                    plan: p.planKey,
+                    userId: user?.id || "00000000-0000-0000-0000-000000000000",
+                    userEmail: user?.email || "guest@cutly.ai",
+                  });
+                }}
+                className={
+                  p.popular
+                    ? "btn-glow mt-2 w-full rounded-xl"
+                    : "mt-2 w-full rounded-xl border border-white/10 bg-white/5 hover:bg-white/10"
+                }
+                variant={p.popular ? "default" : "secondary"}
+              >
+                {p.cta}
+              </Button>
+            ) : (
+              <Button
+                asChild
+                className={
+                  p.popular
+                    ? "btn-glow mt-2 w-full rounded-xl"
+                    : "mt-2 w-full rounded-xl border border-white/10 bg-white/5 hover:bg-white/10"
+                }
+                variant={p.popular ? "default" : "secondary"}
+              >
+                <Link to={p.to}>{p.cta}</Link>
+              </Button>
+            )}
             <ul className="mt-6 space-y-2 text-sm">
               {p.features.map((f) => (
                 <li key={f} className="flex items-start gap-2">

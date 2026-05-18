@@ -9,8 +9,12 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsRouteImport } from './routes/terms'
+import { Route as ShippingRouteImport } from './routes/shipping'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as RefundRouteImport } from './routes/refund'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
@@ -31,6 +35,16 @@ import { Route as ApiPublicWebhooksN8nRouteImport } from './routes/api/public/we
 import { Route as ApiPublicV1RemoveBgRouteImport } from './routes/api/public/v1/remove-bg'
 import { Route as ApiPublicHooksCleanupExpiredRouteImport } from './routes/api/public/hooks/cleanup-expired'
 
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShippingRoute = ShippingRouteImport.update({
+  id: '/shipping',
+  path: '/shipping',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
@@ -39,6 +53,16 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RefundRoute = RefundRouteImport.update({
+  id: '/refund',
+  path: '/refund',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PricingRoute = PricingRouteImport.update({
@@ -149,8 +173,12 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
+  '/refund': typeof RefundRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/shipping': typeof ShippingRoute
+  '/terms': typeof TermsRoute
   '/app/admin': typeof AppAdminRoute
   '/app/api-keys': typeof AppApiKeysRoute
   '/app/billing': typeof AppBillingRoute
@@ -172,8 +200,12 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
+  '/refund': typeof RefundRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/shipping': typeof ShippingRoute
+  '/terms': typeof TermsRoute
   '/app/admin': typeof AppAdminRoute
   '/app/api-keys': typeof AppApiKeysRoute
   '/app/billing': typeof AppBillingRoute
@@ -196,8 +228,12 @@ export interface FileRoutesById {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
+  '/refund': typeof RefundRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/shipping': typeof ShippingRoute
+  '/terms': typeof TermsRoute
   '/app/admin': typeof AppAdminRoute
   '/app/api-keys': typeof AppApiKeysRoute
   '/app/billing': typeof AppBillingRoute
@@ -221,8 +257,12 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/pricing'
+    | '/privacy'
+    | '/refund'
     | '/register'
     | '/reset-password'
+    | '/shipping'
+    | '/terms'
     | '/app/admin'
     | '/app/api-keys'
     | '/app/billing'
@@ -244,8 +284,12 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/pricing'
+    | '/privacy'
+    | '/refund'
     | '/register'
     | '/reset-password'
+    | '/shipping'
+    | '/terms'
     | '/app/admin'
     | '/app/api-keys'
     | '/app/billing'
@@ -267,8 +311,12 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/pricing'
+    | '/privacy'
+    | '/refund'
     | '/register'
     | '/reset-password'
+    | '/shipping'
+    | '/terms'
     | '/app/admin'
     | '/app/api-keys'
     | '/app/billing'
@@ -291,8 +339,12 @@ export interface RootRouteChildren {
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   PricingRoute: typeof PricingRoute
+  PrivacyRoute: typeof PrivacyRoute
+  RefundRoute: typeof RefundRoute
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ShippingRoute: typeof ShippingRoute
+  TermsRoute: typeof TermsRoute
   ApiPublicHooksCleanupExpiredRoute: typeof ApiPublicHooksCleanupExpiredRoute
   ApiPublicV1RemoveBgRoute: typeof ApiPublicV1RemoveBgRoute
   ApiPublicWebhooksN8nRoute: typeof ApiPublicWebhooksN8nRoute
@@ -301,6 +353,20 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shipping': {
+      id: '/shipping'
+      path: '/shipping'
+      fullPath: '/shipping'
+      preLoaderRoute: typeof ShippingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reset-password': {
       id: '/reset-password'
       path: '/reset-password'
@@ -313,6 +379,20 @@ declare module '@tanstack/react-router' {
       path: '/register'
       fullPath: '/register'
       preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/refund': {
+      id: '/refund'
+      path: '/refund'
+      fullPath: '/refund'
+      preLoaderRoute: typeof RefundRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pricing': {
@@ -481,8 +561,12 @@ const rootRouteChildren: RootRouteChildren = {
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   PricingRoute: PricingRoute,
+  PrivacyRoute: PrivacyRoute,
+  RefundRoute: RefundRoute,
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ShippingRoute: ShippingRoute,
+  TermsRoute: TermsRoute,
   ApiPublicHooksCleanupExpiredRoute: ApiPublicHooksCleanupExpiredRoute,
   ApiPublicV1RemoveBgRoute: ApiPublicV1RemoveBgRoute,
   ApiPublicWebhooksN8nRoute: ApiPublicWebhooksN8nRoute,

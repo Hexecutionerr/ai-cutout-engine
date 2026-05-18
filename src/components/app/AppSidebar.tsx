@@ -1,6 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { getDashboardSummary } from "@/rpc/uploads.functions";
 import {
   LayoutGrid,
   History,
@@ -22,9 +25,25 @@ const NAV = [
 ] as const;
 
 export function AppSidebar() {
+  const getSummary = useServerFn(getDashboardSummary);
+  const [plan, setPlan] = useState("Starter Plan");
+
+  useEffect(() => {
+    getSummary()
+      .then((s) => {
+        if (s?.subscription?.status === "active") {
+          const name = s.subscription.plan === "pro" ? "Pro Plan" : "Business Plan";
+          setPlan(name);
+        } else {
+          setPlan("Starter Plan");
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <aside className="hidden w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar p-5 lg:flex">
-      <Logo subtitle="Pro Plan" />
+      <Logo subtitle={plan} />
 
       <nav className="mt-8 flex flex-col gap-1">
         {NAV.map(({ to, label, icon: Icon }) => (

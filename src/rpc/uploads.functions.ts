@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import fs from "fs";
 import path from "path";
-
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const inputSchema = z.object({
   imageDataUrl: z.string().min(10).max(15_000_000),
@@ -53,7 +53,7 @@ export const processBackgroundRemoval = createServerFn({ method: "POST" })
       }
 
       const json = (await res.json()) as {
-        choices?: Array<{ message?: { images?: Array<{ image_url?: { url?: string } }> } }>;
+          choices?: Array<{ message?: { images?: Array<{ image_url?: { url?: string } }> } }>;
       };
       const url = json.choices?.[0]?.message?.images?.[0]?.image_url?.url;
       if (!url) {
@@ -82,12 +82,17 @@ const inMemoryUploads: Array<{
   status: string;
   created_at: string;
   size_bytes: number | null;
+  user_id?: string;
 }> = [];
 
 export const saveUpload = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => data as typeof inMemoryUploads[0])
-  .handler(async ({ data }) => {
-    inMemoryUploads.unshift(data);
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const uploadWithUser = { ...data, user_id: userId };
+    inMemoryUploads.unshift(uploadWithUser);
+    
     // Keep max 50 recent items to avoid memory bloat
     if (inMemoryUploads.length > 50) {
       inMemoryUploads.pop();
@@ -132,10 +137,30 @@ export const saveUpload = createServerFn({ method: "POST" })
   });
 
 export const getDashboardSummary = createServerFn({ method: "GET" })
-  .handler(async () => {
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { userId, supabase } = context;
+
+    // Fetch credits sum from DB
+    const { data: creditsData } = await supabase
+      .from("credits")
+      .select("delta")
+      .eq("user_id", userId);
+    
+    // Start brand new users with 5 free credits
+    const totalDeltas = (creditsData ?? []).reduce((acc: number, curr: any) => acc + (curr.delta ?? 0), 0);
+    const credits = creditsData && creditsData.length > 0 ? totalDeltas : 5;
+
+    // Fetch subscription
+    const { data: sub } = await supabase
+      .from("subscriptions")
+      .select("plan, status, monthly_credits, current_period_end")
+      .eq("user_id", userId)
+      .maybeSingle();
+
     return {
-      credits: 999,
-      uploads: inMemoryUploads,
-      subscription: null as null | { plan: string; status: string; monthly_credits: number; current_period_end: string | null },
+      credits,
+      uploads: inMemoryUploads.filter(u => u.user_id === userId),
+      subscription: sub as null | { plan: string; status: string; monthly_credits: number; current_period_end: string | null },
     };
   });

@@ -60,9 +60,9 @@ function safeEq(a: string, b: string): boolean {
 
 // Plan catalog — credits granted per plan / pack
 export const PLAN_CATALOG = {
-  starter: { amountPaise: 99900, credits: 200, label: "Starter" },
-  pro: { amountPaise: 249900, credits: 1000, label: "Pro" },
-  business: { amountPaise: 999900, credits: 5000, label: "Business" },
+  starter: { amountPaise: 2900, credits: 50, label: "Credits Pack" },
+  pro: { amountPaise: 9900, credits: 200, label: "Pro Plan" },
+  business: { amountPaise: 19900, credits: 1000, label: "Business Plan" },
 } as const;
 
 export type PlanKey = keyof typeof PLAN_CATALOG;
