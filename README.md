@@ -22,8 +22,8 @@
 <br />
 <br />
 
-> **High-performance AI background removal in milliseconds.**  
-> Built with React 19, TanStack Start, Supabase Auth/DB, native IndexedDB caching, Razorpay Payments, and Gemini 2.5 Flash.
+> **A simple and fast AI background removal web app.**  
+> Built with React 19, TanStack, Supabase Auth/Database, Razorpay Payments, and an automated n8n batch workflow using the Clipdrop API and Google Sheets.
 
 <br />
 
@@ -33,7 +33,9 @@
 
 ---
 
-## 📺 Project Walkthrough
+## 📺 Live App Demo
+
+Here is a short video walkthrough of how the application works locally and online:
 
 <div align="center">
   <img src="public/demo.webp" alt="Cutly AI App Walkthrough Demo" width="90%" style="border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);" />
@@ -41,143 +43,146 @@
 
 ---
 
-## ✨ Verified Features
+## ⚙️ How It Works (System Flow)
 
-### 🧠 Multimodal AI core
-* **Gemini 2.5 Flash Image Model** (`google/gemini-2.5-flash-image-preview` via Lovable API gateway) for background extraction.
-* Preserves complex image edges (hair strands, fur, semi-transparency) using customized prompting.
-* Accepts drag-and-drop images (PNG, JPG, HEIC) up to 20MB.
+Here is a simple flowchart showing how the React web app, Supabase database, Razorpay, n8n workflow, Clipdrop API, and Google Sheets connect together:
 
-### 💳 Credit Billing & Razorpay Integration
-* **Razorpay Checkout SDK** loaded on client for payments supporting UPI, Cards, NetBanking, and Wallets.
-* **Credit-based usage**: 1 credit consumed per successful background removal.
-* **Tiers & catalog**:
-  * Free Pack: 2 credits (guest / registration default)
-  * Pro Subscription: ₹99/mo (10 credits, recurring)
-  * Starter Credits Pack: ₹29 (50 credits, one-time)
-* **Razorpay webhook** endpoint (`/api/public/webhooks/razorpay`) with HMAC-SHA256 signature verification to process credit allocations.
-
-### 🔐 Double-Sided Authentication & RLS
-* **Supabase Auth** integration for user signup, login, session validation, and logout.
-* **Type-Safe Auth Middleware** (`requireSupabaseAuth`) built with TanStack Start to protect all server RPC actions.
-* Database security enforced with strict **Row Level Security (RLS)** in PostgreSQL (users can only access their own uploads and billing logs).
-
-### 💾 Hybrid Client & Server State
-* **Native IndexedDB Wrapper** (`local-db.ts`) handles offline caching and guest mode uploads.
-* Guest users can process backgrounds locally and retrieve historical logs from local storage without logging in.
-* Authenticated users get database persistence and real-time syncing between their online dashboard and local state.
-* **Dashboard Analytics**: Tracks total processed files, credits remaining, average processing speed, and total downloads.
-
-### 🔌 Developer REST API & n8n webhook
-* **Public endpoint**: `POST /api/public/v1/remove-bg` with `Authorization: Bearer <api-key>`.
-* **API Key CRUD**: Generate, view, and revoke API keys via the workspace settings dashboard.
-* **n8n Async Webhook**: Integrates with custom self-hosted n8n workflows (`n8n/workflows/cutly-batch.json`) for handling asynchronous batch image cutouts.
+<img src="public/architecture.png" alt="Cutly AI System Flowchart" width="100%" />
 
 ---
 
-## 🏗️ Architecture
+## 🚀 Features
 
-<img src="public/architecture.png" alt="Cutly AI System Architecture" width="100%" />
+### 1. Easy Background Removal Workspace
+* Drag and drop your image (PNG, JPG, or HEIC) directly into the app.
+* See a cool side-by-side slider showing the **Before** and **After** images.
+* Download your background-removed image with a single click.
 
----
+### 2. Native IndexedDB Local Cache (Guest Mode)
+* If you do not want to log in, you can still use the app!
+* The app automatically saves your processed images directly in your browser's local memory (**IndexedDB**).
+* You can refresh the page and still see your previous workspace history.
 
-## 🛠️ Verified Tech Stack
+### 3. User Login & Signup (Supabase)
+* Safe and secure user accounts powered by **Supabase Auth**.
+* Safe data access using **Row Level Security (RLS)** in PostgreSQL. This means users can only see their own history and account information.
 
-| Component | Library/Service | Purpose |
-|---|---|---|
-| **Frontend** | React 19, TypeScript 5.8 | UI development with strict typing |
-| **Framework** | TanStack Start | SSR & Type-Safe Server Functions (RPC) |
-| **Routing** | TanStack Router | File-based, type-safe navigation and head meta |
-| **Bundler** | Vite 7 | Fast build server and HMR pipeline |
-| **Database & Auth** | Supabase | PostgreSQL storage, User Auth, RLS Policies |
-| **AI Inference** | Gemini 2.5 Flash | Image-to-image foreground segmentations |
-| **Payments** | Razorpay SDK | Payment gateway and order routing |
-| **Local Cache** | Native IndexedDB API | Offline state database |
-| **Validation** | Zod | Server Function schema and payload validations |
-| **Styling** | Tailwind CSS v4 + Radix UI | Dark-mode, glassmorphic layout, fluid animations |
+### 4. Paid Upgrades & Credits (Razorpay)
+* Users get **free credits** when they sign up.
+* Need more? You can buy credit packs using the integrated **Razorpay Payment Gateway**.
+* Supports payments via **UPI (GPay, PhonePe, Paytm)**, Credit/Debit cards, NetBanking, and mobile wallets.
+* A secure webhook verifies the signature (`HMAC-SHA256`) and adds credits to your account after a successful payment.
 
----
+### 5. Automated n8n Batch Workflow & Clipdrop API
+* For processing multiple images in bulk, the app includes a pre-configured **n8n workflow** (`n8n/workflows/cutly-batch.json`).
+* **The flow works like this:**
+  1. A webhook triggers the n8n automation process.
+  2. n8n sends the images to the **Clipdrop API** to remove the background with high precision.
+  3. The background-removed image URLs are saved and logged directly inside a **Google Sheet** for easy tracking.
+  4. n8n sends a success notification webhook back to the Cutly database.
 
-## 📁 Key File Map
-
-```
-ai-cutout-studio/
-├── src/
-│   ├── components/
-│   │   ├── auth/AuthGate.tsx           # Protects routes requiring user authentication
-│   │   ├── history/HistoryUploadCard.tsx# History layout with analytics card
-│   │   └── app/AppSidebar.tsx          # Sidebar layout configuration
-│   │
-│   ├── lib/
-│   │   ├── local-db.ts                 # Native IndexedDB wrapper for guest mode
-│   │   ├── razorpay-checkout.ts        # Client Razorpay checkout invocation logic
-│   │   └── credits.ts                  # Billing tier default constants
-│   │
-│   ├── integrations/supabase/
-│   │   ├── auth-middleware.ts          # requireSupabaseAuth check middleware
-│   │   └── client.server.ts            # Server-side Supabase client initialization
-│   │
-│   ├── rpc/                            # Server RPC Function Layer
-│   │   ├── uploads.functions.ts        # Gemini processing, db save, download tracking
-│   │   └── razorpay.server.ts          # Razorpay order creator + verification logic
-│   │
-│   └── routes/
-│       ├── index.tsx                   # Marketing landing page
-│       ├── app.workspace.tsx           # Main workspace UI (drag-drop, slider, processing)
-│       ├── app.history.tsx             # History tab UI (offline/online mode switcher)
-│       ├── app.billing.tsx             # Plans and credits configuration
-│       ├── app.api-keys.tsx            # API key generation panel
-│       ├── pricing.tsx                 # Pricing overview & checkout trigger
-│       ├── api-docs.tsx                # REST API interactive documentation
-│       └── api/public/                 # Public webhooks and REST endpoints
-│           ├── v1/remove-bg.ts         # User API endpoints
-│           └── webhooks/razorpay.ts    # Razorpay payment listener
-```
+### 6. Developer Public REST API
+* Generate custom API keys from your settings dashboard.
+* Send automated `POST` requests to the endpoint `/api/public/v1/remove-bg` to process backgrounds from external apps.
 
 ---
 
-## 🚀 Deployed on Vercel
+## 🛠️ Technology Stack
 
-The application is deployed live using **Vercel Serverless Functions**:
+* **Frontend**: React 19, TypeScript 5.8, Tailwind CSS v4, Radix UI.
+* **Routing**: TanStack Router (fast, type-safe file routing).
+* **Server**: TanStack Start (type-safe RPC Server Functions).
+* **Database & Auth**: Supabase (PostgreSQL database & user authentication).
+* **Payments**: Razorpay SDK.
+* **Automation**: n8n workflow.
+* **AI Background Removal**: Clipdrop API.
+* **Data Logging**: Google Sheets.
 
-🔗 **Production URL**: [https://ai-cutout-engine.vercel.app](https://ai-cutout-engine.vercel.app)
+---
 
-### Environment Variables required in Vercel
-Set these in your Vercel Dashboard (**Project Settings > Environment Variables**):
+## 📂 Code Directories
 
-```env
-# Supabase Configuration
-SUPABASE_URL="https://your-supabase.supabase.co"
-SUPABASE_PUBLISHABLE_KEY="your-anon-key"
-SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"
+* `src/routes/index.tsx` — Clean, modern landing page.
+* `src/routes/app.workspace.tsx` — Workspace where you upload and remove backgrounds.
+* `src/routes/app.history.tsx` — History page showing past images (saves offline or online).
+* `src/routes/app.billing.tsx` — Checkout page to buy credits.
+* `src/routes/app.api-keys.tsx` — Page to create and manage developer API keys.
+* `src/rpc/razorpay.server.ts` — Server code to create Razorpay orders and verify signatures.
+* `src/lib/local-db.ts` — Handles saving guest-mode history in the browser's IndexedDB.
+* `n8n/workflows/cutly-batch.json` — The JSON configuration file for your n8n workflow.
 
-# Razorpay Configuration
-RAZORPAY_KEY_ID="rzp_test_..."
-RAZORPAY_KEY_SECRET="your-razorpay-secret"
-RAZORPAY_WEBHOOK_SECRET="your-webhook-secret"
+---
 
-# Gateway Configuration
-LOVABLE_API_KEY="your-lovable-gateway-api-key"
-```
+## 📦 Setting Up Locally
+
+1. **Clone the project repository:**
+   ```bash
+   git clone https://github.com/Hexecutionerr/ai-cutout-engine.git
+   cd ai-cutout-engine
+   ```
+
+2. **Install all dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Configure your `.env` file:**
+   Create a `.env` file in the root folder and add your credentials:
+   ```env
+   SUPABASE_URL="https://your-project.supabase.co"
+   SUPABASE_PUBLISHABLE_KEY="your-anon-key"
+   SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"
+   RAZORPAY_KEY_ID="rzp_test_..."
+   RAZORPAY_KEY_SECRET="your-secret"
+   ```
+
+4. **Run the developer server:**
+   ```bash
+   npm run dev
+   ```
+   Open `http://localhost:5173` in your browser.
+
+---
+
+## 🚀 How to Deploy on Vercel
+
+1. Make sure you install the Vercel CLI:
+   ```bash
+   npm install -g vercel
+   ```
+
+2. Push your local environment variables to Vercel:
+   ```bash
+   vercel env add SUPABASE_URL production
+   vercel env add SUPABASE_PUBLISHABLE_KEY production
+   vercel env add SUPABASE_SERVICE_ROLE_KEY production
+   vercel env add RAZORPAY_KEY_ID production
+   vercel env add RAZORPAY_KEY_SECRET production
+   ```
+
+3. Run the production deployment command:
+   ```bash
+   vercel --prod
+   ```
 
 ---
 
 <div align="center">
 
-## 👨‍💻 Author
+## 👨‍💻 Project Developer
 
 <img src="https://avatars.githubusercontent.com/Hexecutionerr" width="80" style="border-radius:50%" />
 
 **Hasnain Khan**  
-*Full-Stack Developer & AI Integrations*
+*Full-Stack Web Developer*
 
 [![GitHub](https://img.shields.io/badge/GitHub-Hexecutionerr-181717?style=for-the-badge&logo=github)](https://github.com/Hexecutionerr)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Hasnain%20Khan-0077B5?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/hasnain-khan-0ab3b2320)
 
 <br />
 
-*Built end-to-end with React 19, TanStack, Supabase, Razorpay, and Gemini AI.*
+*Built end-to-end with React 19, Supabase, Razorpay, n8n, Clipdrop API, and Google Sheets.*
 
-*If you find this project helpful, please ⭐ star the repository!*
+*If you like this project, please give it a ⭐ star!*
 
 </div>
