@@ -27,7 +27,7 @@ const PLANS = [
     desc: "Perfect for personal projects and exploring the AI capabilities.",
     cta: "Start Free",
     to: "/register" as const,
-    features: ["5 credits per month", "Standard resolution", "Web dashboard access"],
+    features: ["2 free background removals", "Standard resolution", "Web dashboard access"],
   },
   {
     label: "SUBSCRIPTION",
@@ -40,7 +40,7 @@ const PLANS = [
     popular: true,
     planKey: "pro" as const,
     features: [
-      "200 credits per month",
+      "10 credits per month",
       "4K Resolution Support",
       "Batch processing (up to 50)",
       "Priority AI queue",

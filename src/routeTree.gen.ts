@@ -24,6 +24,7 @@ import { Route as BlogRouteImport } from './routes/blog'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as ApiDocsRouteImport } from './routes/api-docs'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AppWorkspaceRouteImport } from './routes/app.workspace'
 import { Route as AppSettingsRouteImport } from './routes/app.settings'
 import { Route as AppHistoryRouteImport } from './routes/app.history'
@@ -110,6 +111,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppWorkspaceRoute = AppWorkspaceRouteImport.update({
   id: '/workspace',
   path: '/workspace',
@@ -185,6 +191,7 @@ export interface FileRoutesByFullPath {
   '/app/history': typeof AppHistoryRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/workspace': typeof AppWorkspaceRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/api/public/hooks/cleanup-expired': typeof ApiPublicHooksCleanupExpiredRoute
   '/api/public/v1/remove-bg': typeof ApiPublicV1RemoveBgRoute
   '/api/public/webhooks/n8n': typeof ApiPublicWebhooksN8nRoute
@@ -212,6 +219,7 @@ export interface FileRoutesByTo {
   '/app/history': typeof AppHistoryRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/workspace': typeof AppWorkspaceRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/api/public/hooks/cleanup-expired': typeof ApiPublicHooksCleanupExpiredRoute
   '/api/public/v1/remove-bg': typeof ApiPublicV1RemoveBgRoute
   '/api/public/webhooks/n8n': typeof ApiPublicWebhooksN8nRoute
@@ -240,6 +248,7 @@ export interface FileRoutesById {
   '/app/history': typeof AppHistoryRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/workspace': typeof AppWorkspaceRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/api/public/hooks/cleanup-expired': typeof ApiPublicHooksCleanupExpiredRoute
   '/api/public/v1/remove-bg': typeof ApiPublicV1RemoveBgRoute
   '/api/public/webhooks/n8n': typeof ApiPublicWebhooksN8nRoute
@@ -269,6 +278,7 @@ export interface FileRouteTypes {
     | '/app/history'
     | '/app/settings'
     | '/app/workspace'
+    | '/auth/callback'
     | '/api/public/hooks/cleanup-expired'
     | '/api/public/v1/remove-bg'
     | '/api/public/webhooks/n8n'
@@ -296,6 +306,7 @@ export interface FileRouteTypes {
     | '/app/history'
     | '/app/settings'
     | '/app/workspace'
+    | '/auth/callback'
     | '/api/public/hooks/cleanup-expired'
     | '/api/public/v1/remove-bg'
     | '/api/public/webhooks/n8n'
@@ -323,6 +334,7 @@ export interface FileRouteTypes {
     | '/app/history'
     | '/app/settings'
     | '/app/workspace'
+    | '/auth/callback'
     | '/api/public/hooks/cleanup-expired'
     | '/api/public/v1/remove-bg'
     | '/api/public/webhooks/n8n'
@@ -345,6 +357,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   ShippingRoute: typeof ShippingRoute
   TermsRoute: typeof TermsRoute
+  AuthCallbackRoute: typeof AuthCallbackRoute
   ApiPublicHooksCleanupExpiredRoute: typeof ApiPublicHooksCleanupExpiredRoute
   ApiPublicV1RemoveBgRoute: typeof ApiPublicV1RemoveBgRoute
   ApiPublicWebhooksN8nRoute: typeof ApiPublicWebhooksN8nRoute
@@ -458,6 +471,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/app/workspace': {
       id: '/app/workspace'
       path: '/workspace'
@@ -567,6 +587,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   ShippingRoute: ShippingRoute,
   TermsRoute: TermsRoute,
+  AuthCallbackRoute: AuthCallbackRoute,
   ApiPublicHooksCleanupExpiredRoute: ApiPublicHooksCleanupExpiredRoute,
   ApiPublicV1RemoveBgRoute: ApiPublicV1RemoveBgRoute,
   ApiPublicWebhooksN8nRoute: ApiPublicWebhooksN8nRoute,

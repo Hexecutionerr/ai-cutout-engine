@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { CreditCard, Download, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
+import { useAuthServerFn } from "@/hooks/useAuthServerFn";
 import { listPayments } from "@/rpc/billing.functions";
 import { getDashboardSummary } from "@/rpc/uploads.functions";
 
@@ -12,8 +12,8 @@ export const Route = createFileRoute("/app/billing")({
 });
 
 function BillingPage() {
-  const getPayments = useServerFn(listPayments);
-  const getSummary = useServerFn(getDashboardSummary);
+  const getPayments = useAuthServerFn(listPayments);
+  const getSummary = useAuthServerFn(getDashboardSummary);
 
   const [payments, setPayments] = useState<any[]>([]);
   const [summary, setSummary] = useState<any>(null);

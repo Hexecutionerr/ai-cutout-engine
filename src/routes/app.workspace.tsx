@@ -2,12 +2,15 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { UploadCloud, Settings2, Download, Sparkles, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
+import { useAuthServerFn } from "@/hooks/useAuthServerFn";
 import { processBackgroundRemoval, getDashboardSummary, saveUpload } from "@/rpc/uploads.functions";
 import { toast } from "sonner";
 import { removeBackground } from "@imgly/background-removal";
 
 import { saveUploadLocal, getUploadsLocal, type UploadRow } from "@/lib/local-db";
+import { mapServerUploads, mergeUploadHistory } from "@/lib/upload-history";
+import { useAuth } from "@/hooks/useAuth";
+import { NO_CREDITS_MESSAGE } from "@/lib/credits";
 
 export const Route = createFileRoute("/app/workspace")({
   head: () => ({ meta: [{ title: "Workspace — Cutly AI" }] }),
@@ -16,9 +19,10 @@ export const Route = createFileRoute("/app/workspace")({
 
 
 function WorkspacePage() {
-  const processFn = useServerFn(processBackgroundRemoval);
-  const summaryFn = useServerFn(getDashboardSummary);
-  const saveUploadFn = useServerFn(saveUpload);
+  const { user } = useAuth();
+  const processFn = useAuthServerFn(processBackgroundRemoval);
+  const summaryFn = useAuthServerFn(getDashboardSummary);
+  const saveUploadFn = useAuthServerFn(saveUpload);
   const inputRef = useRef<HTMLInputElement>(null);
   const [credits, setCredits] = useState(0);
   const [uploads, setUploads] = useState<UploadRow[]>([]);
@@ -26,37 +30,39 @@ function WorkspacePage() {
   const [active, setActive] = useState<{ original: string; result: string | null; filename: string } | null>(null);
 
   const refresh = async () => {
+    if (!user?.id) return;
     try {
       const s = await summaryFn();
-      if (s && typeof s.credits === 'number') {
-        setCredits(s.credits);
-      }
-      
-      const localUploads = await getUploadsLocal();
-      const merged = [...localUploads];
-      const localIds = new Set(localUploads.map(u => u.id));
-      if (s && Array.isArray(s.uploads)) {
-        for (const u of s.uploads as UploadRow[]) {
-          if (!localIds.has(u.id)) {
-            merged.push(u);
-            saveUploadLocal(u).catch(console.error); // sync to local
-          }
-        }
-      }
-      merged.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-      
+      if (s && typeof s.credits === "number") setCredits(s.credits);
+
+      const serverRows = s?.uploads ? mapServerUploads(s.uploads) : [];
+      const localRows = await getUploadsLocal(user.id);
+      const merged = mergeUploadHistory(serverRows, localRows);
       setUploads(merged);
-    } catch (e) { console.error(e); }
+
+      for (const u of serverRows) {
+        saveUploadLocal({ ...u, user_id: user.id }, user.id).catch(console.error);
+      }
+    } catch (e) {
+      console.error(e);
+    }
   };
-  useEffect(() => { refresh(); }, []);
+  useEffect(() => {
+    refresh();
+  }, [user?.id]);
 
   const handleFile = async (file: File) => {
     if (file.size > 15 * 1024 * 1024) { toast.error("Max file size is 15 MB"); return; }
+    if (credits < 1) {
+      toast.error(NO_CREDITS_MESSAGE);
+      return;
+    }
     const reader = new FileReader();
     reader.onload = async () => {
       const dataUrl = reader.result as string;
       setBusy(true);
       setActive({ original: dataUrl, result: null, filename: file.name });
+      const processingStartedAt = performance.now();
       try {
         let resultUrl = "";
         // Send image to webhook in binary format
@@ -89,6 +95,8 @@ function WorkspacePage() {
 
         setActive({ original: dataUrl, result: resultUrl, filename: file.name });
         
+        const processingDurationMs = Math.round(performance.now() - processingStartedAt);
+
         const newUpload: UploadRow = {
           id: crypto.randomUUID(),
           filename: file.name,
@@ -96,14 +104,22 @@ function WorkspacePage() {
           result_url: resultUrl,
           status: "completed",
           created_at: new Date().toISOString(),
-          size_bytes: file.size
+          size_bytes: file.size,
+          processing_duration_ms: processingDurationMs,
+          download_count: 0,
         };
 
-        setUploads(prev => [newUpload, ...prev]);
-        saveUploadLocal(newUpload).catch(err => console.error("Failed to save to local DB", err));
-        saveUploadFn({ data: newUpload }).catch(err => console.error("Failed to save to history", err));
-        
-        toast.success("Background removed successfully");
+        const persisted = { ...newUpload, user_id: user?.id };
+        setUploads((prev) => [persisted, ...prev]);
+
+        const saved = await saveUploadFn(persisted);
+        if (saved && typeof saved === "object" && "ok" in saved && !saved.ok) {
+          toast.error("error" in saved && typeof saved.error === "string" ? saved.error : "Could not save to history");
+        } else {
+          if (user?.id) saveUploadLocal(persisted, user.id).catch(console.error);
+          toast.success("Background removed — saved to your history");
+          void refresh();
+        }
       } catch (e) { toast.error(e instanceof Error ? e.message : "Failed to remove background"); }
       finally { setBusy(false); }
     };

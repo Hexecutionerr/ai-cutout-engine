@@ -183,10 +183,10 @@ begin
 
   insert into public.user_roles (user_id, role) values (new.id, 'user') on conflict do nothing;
 
-  insert into public.credits (user_id, delta, reason) values (new.id, 5, 'signup_bonus');
+  insert into public.credits (user_id, delta, reason) values (new.id, 2, 'signup_bonus');
 
   insert into public.subscriptions (user_id, plan, status, monthly_credits)
-  values (new.id, 'free', 'active', 5);
+  values (new.id, 'free', 'active', 2);
 
   return new;
 end; $$;

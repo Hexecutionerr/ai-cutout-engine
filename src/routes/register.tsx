@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/brand/Logo";
 import { Check } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -19,15 +19,19 @@ export const Route = createFileRoute("/register")({
   head: () => ({
     meta: [
       { title: "Create account — Cutly AI" },
-      { name: "description", content: "Start removing backgrounds with Cutly AI in seconds. 5 free credits daily." },
+      { name: "description", content: "Start removing backgrounds with Cutly AI in seconds. 2 free credits on signup." },
     ],
   }),
   component: RegisterPage,
 });
 
 function RegisterPage() {
-  const { signUp, signInWithGoogle } = useAuth();
+  const { signUp, signInWithGoogle, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!authLoading && user) navigate({ to: "/app/workspace" });
+  }, [authLoading, user, navigate]);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -41,10 +45,13 @@ function RegisterPage() {
       return;
     }
     setLoading(true);
-    const { error } = await signUp(email, password, fullName);
+    const { error, needsEmailConfirmation } = await signUp(email, password, fullName);
     setLoading(false);
     if (error) toast.error(error);
-    else {
+    else if (needsEmailConfirmation) {
+      toast.success("Check your email to confirm your account, then sign in.");
+      navigate({ to: "/login" });
+    } else {
       toast.success("Account created — welcome!");
       navigate({ to: "/app/workspace" });
     }
@@ -61,7 +68,7 @@ function RegisterPage() {
               <br /> using <span className="text-ai-gradient">Cutly AI</span>
             </h1>
             <ul className="mt-6 space-y-3 text-sm text-muted-foreground">
-              {["5 free credits to start","Pixel-perfect edge AI","Batch processing & API access","No credit card required"].map((b) => (
+              {["2 free background removals","Pixel-perfect edge AI","Pro plan: 10 credits/month","No credit card required"].map((b) => (
                 <li key={b} className="flex items-center gap-2"><Check className="h-4 w-4 text-cyan" /> {b}</li>
               ))}
             </ul>
@@ -71,7 +78,15 @@ function RegisterPage() {
             <Logo />
             <h2 className="mt-6 font-display text-2xl font-semibold">Create your account</h2>
 
-            <Button onClick={signInWithGoogle} variant="outline" className="mt-6 w-full rounded-xl border-white/10 bg-white/5">
+            <Button
+              type="button"
+              onClick={async () => {
+                const { error } = await signInWithGoogle();
+                if (error) toast.error(error);
+              }}
+              variant="outline"
+              className="mt-6 w-full rounded-xl border-white/10 bg-white/5"
+            >
               Continue with Google
             </Button>
 

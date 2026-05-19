@@ -6,8 +6,10 @@ export interface UploadRow {
   status: string;
   created_at: string;
   size_bytes: number | null;
+  processing_duration_ms?: number | null;
+  download_count?: number;
+  user_id?: string;
 }
-
 
 const DB_NAME = "cutly_db";
 const STORE_NAME = "uploads";
@@ -26,25 +28,26 @@ export async function initDB(): Promise<IDBDatabase> {
   });
 }
 
-export async function saveUploadLocal(upload: UploadRow): Promise<void> {
+export async function saveUploadLocal(upload: UploadRow, userId?: string): Promise<void> {
   const db = await initDB();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(STORE_NAME, "readwrite");
     const store = transaction.objectStore(STORE_NAME);
-    const request = store.put(upload);
+    const request = store.put({ ...upload, user_id: userId ?? upload.user_id });
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
   });
 }
 
-export async function getUploadsLocal(): Promise<UploadRow[]> {
+export async function getUploadsLocal(userId?: string): Promise<UploadRow[]> {
   const db = await initDB();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(STORE_NAME, "readonly");
     const store = transaction.objectStore(STORE_NAME);
     const request = store.getAll();
     request.onsuccess = () => {
-      const data = request.result as UploadRow[];
+      let data = request.result as UploadRow[];
+      if (userId) data = data.filter((u) => u.user_id === userId);
       resolve(data.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
     };
     request.onerror = () => reject(request.error);

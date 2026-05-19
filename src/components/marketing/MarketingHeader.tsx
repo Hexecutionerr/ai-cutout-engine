@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 
 const NAV = [
   { to: "/features", label: "Features" },
@@ -10,6 +11,8 @@ const NAV = [
 ] as const;
 
 export function MarketingHeader() {
+  const { user, loading, signOut } = useAuth();
+
   return (
     <header className="sticky top-0 z-40 w-full border-b border-white/5 bg-background/70 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
@@ -29,12 +32,30 @@ export function MarketingHeader() {
           ))}
         </nav>
         <div className="flex items-center gap-3">
-          <Link to="/login" className="text-sm text-muted-foreground hover:text-foreground">
-            Log In
-          </Link>
-          <Button asChild className="btn-glow rounded-xl">
-            <Link to="/register">Get Started</Link>
-          </Button>
+          {!loading && user ? (
+            <>
+              <Link to="/app/workspace" className="text-sm text-muted-foreground hover:text-foreground">
+                Workspace
+              </Link>
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-xl border-white/10 bg-white/5"
+                onClick={() => signOut().then(() => { window.location.href = "/"; })}
+              >
+                Sign out
+              </Button>
+            </>
+          ) : (
+            <>
+              <Link to="/login" className="text-sm text-muted-foreground hover:text-foreground">
+                Log In
+              </Link>
+              <Button asChild className="btn-glow rounded-xl">
+                <Link to="/register">Get Started</Link>
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </header>

@@ -81,7 +81,7 @@ function Hero() {
           <div className="mt-8 flex flex-wrap items-center gap-6 text-xs text-muted-foreground">
             <span className="flex items-center gap-2"><Check className="h-4 w-4 text-success" /> No credit card</span>
             <span className="flex items-center gap-2"><Check className="h-4 w-4 text-success" /> Instant access</span>
-            <span className="flex items-center gap-2"><Check className="h-4 w-4 text-success" /> 5 free per day</span>
+            <span className="flex items-center gap-2"><Check className="h-4 w-4 text-success" /> 2 free removals</span>
           </div>
         </div>
 

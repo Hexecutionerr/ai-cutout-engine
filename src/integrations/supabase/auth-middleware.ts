@@ -27,27 +27,8 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
     const authHeader = request?.headers?.get('authorization');
     const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.replace('Bearer ', '') : '';
 
-    // Gracefully handle guest/mock token access (e.g. during authentication-free or local development)
-    if (!token || token === 'mock') {
-      const guestId = "00000000-0000-0000-0000-000000000000";
-      const supabase = createClient<Database>(
-        SUPABASE_URL!,
-        SUPABASE_PUBLISHABLE_KEY!,
-        {
-          auth: {
-            storage: undefined,
-            persistSession: false,
-            autoRefreshToken: false,
-          },
-        }
-      );
-      return next({
-        context: {
-          supabase,
-          userId: guestId,
-          claims: { sub: guestId, email: "guest@cutly.ai" } as any,
-        },
-      });
+    if (!token) {
+      throw new Response('Unauthorized: Sign in required', { status: 401 });
     }
 
     const supabase = createClient<Database>(

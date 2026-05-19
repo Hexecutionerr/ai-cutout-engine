@@ -2,7 +2,8 @@ import { Link } from "@tanstack/react-router";
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
+import { useAuthServerFn } from "@/hooks/useAuthServerFn";
+import { useAuth } from "@/hooks/useAuth";
 import { getDashboardSummary } from "@/rpc/uploads.functions";
 import {
   LayoutGrid,
@@ -25,7 +26,8 @@ const NAV = [
 ] as const;
 
 export function AppSidebar() {
-  const getSummary = useServerFn(getDashboardSummary);
+  const { signOut, user, isAdmin } = useAuth();
+  const getSummary = useAuthServerFn(getDashboardSummary);
   const [plan, setPlan] = useState("Starter Plan");
 
   useEffect(() => {
@@ -46,7 +48,7 @@ export function AppSidebar() {
       <Logo subtitle={plan} />
 
       <nav className="mt-8 flex flex-col gap-1">
-        {NAV.map(({ to, label, icon: Icon }) => (
+        {NAV.filter((item) => item.to !== "/app/admin" || isAdmin).map(({ to, label, icon: Icon }) => (
           <Link
             key={to}
             to={to}
@@ -86,6 +88,17 @@ export function AppSidebar() {
         >
           <Settings className="h-4 w-4" /> Settings
         </Link>
+        {user?.email && (
+          <p className="truncate px-3 text-xs text-sidebar-foreground/50">{user.email}</p>
+        )}
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full rounded-xl border-white/10 bg-white/5"
+          onClick={() => signOut().then(() => { window.location.href = "/login"; })}
+        >
+          Sign out
+        </Button>
       </div>
     </aside>
   );

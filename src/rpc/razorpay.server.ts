@@ -58,11 +58,13 @@ function safeEq(a: string, b: string): boolean {
   return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
 }
 
+import { CREDITS } from "@/lib/credits";
+
 // Plan catalog — credits granted per plan / pack
 export const PLAN_CATALOG = {
-  starter: { amountPaise: 2900, credits: 50, label: "Credits Pack" },
-  pro: { amountPaise: 9900, credits: 200, label: "Pro Plan" },
-  business: { amountPaise: 19900, credits: 1000, label: "Business Plan" },
+  starter: { amountPaise: 2900, credits: CREDITS.STARTER_PACK, label: "Credits Pack" },
+  pro: { amountPaise: 9900, credits: CREDITS.PRO_PLAN, label: "Pro Plan" },
+  business: { amountPaise: 19900, credits: CREDITS.BUSINESS_PLAN, label: "Business Plan" },
 } as const;
 
 export type PlanKey = keyof typeof PLAN_CATALOG;

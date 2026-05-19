@@ -201,6 +201,7 @@ export type Database = {
           completed_at: string | null
           created_at: string
           credits_used: number
+          download_count: number
           error: string | null
           expires_at: string
           filename: string | null
@@ -208,6 +209,7 @@ export type Database = {
           id: string
           mime_type: string | null
           original_url: string
+          processing_duration_ms: number | null
           result_url: string | null
           size_bytes: number | null
           source: string
@@ -221,6 +223,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           credits_used?: number
+          download_count?: number
           error?: string | null
           expires_at?: string
           filename?: string | null
@@ -228,6 +231,7 @@ export type Database = {
           id?: string
           mime_type?: string | null
           original_url: string
+          processing_duration_ms?: number | null
           result_url?: string | null
           size_bytes?: number | null
           source?: string
@@ -241,6 +245,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           credits_used?: number
+          download_count?: number
           error?: string | null
           expires_at?: string
           filename?: string | null
@@ -248,6 +253,7 @@ export type Database = {
           id?: string
           mime_type?: string | null
           original_url?: string
+          processing_duration_ms?: number | null
           result_url?: string | null
           size_bytes?: number | null
           source?: string

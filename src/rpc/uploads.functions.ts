@@ -1,16 +1,76 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import fs from "fs";
-import path from "path";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { CREDITS, defaultCreditsForPlan, NO_CREDITS_MESSAGE } from "@/lib/credits";
 
 const inputSchema = z.object({
   imageDataUrl: z.string().min(10).max(15_000_000),
   filename: z.string().trim().min(1).max(255).optional(),
 });
 
-// Public background removal via Lovable AI Gateway (Gemini image edit).
-// No Cloudinary / external storage required — returns a base64 PNG data URL.
+const saveUploadSchema = z.object({
+  id: z.string().uuid().optional(),
+  filename: z.string().nullable().optional(),
+  original_url: z.string().min(1),
+  result_url: z.string().nullable().optional(),
+  status: z.enum(["queued", "processing", "completed", "failed"]).default("completed"),
+  created_at: z.string().optional(),
+  size_bytes: z.number().nullable().optional(),
+  mime_type: z.string().nullable().optional(),
+  processing_duration_ms: z.number().int().nonnegative().optional(),
+});
+
+export type UploadHistoryRow = {
+  id: string;
+  filename: string | null;
+  original_url: string;
+  result_url: string | null;
+  status: string;
+  created_at: string;
+  size_bytes: number | null;
+  processing_duration_ms: number | null;
+  download_count: number;
+};
+
+export type HistoryAnalytics = {
+  creditsRemaining: number;
+  creditsUsed: number;
+  creditsAllocated: number;
+  totalProcessed: number;
+  avgProcessingMs: number | null;
+  totalDownloads: number;
+};
+
+function storeUrl(url: string, maxLen = 400_000): string {
+  if (url.length <= maxLen) return url;
+  if (url.startsWith("data:")) return "";
+  return url.slice(0, maxLen);
+}
+
+function computeAnalytics(
+  uploads: UploadHistoryRow[],
+  creditsRemaining: number,
+  plan: string | null | undefined,
+): HistoryAnalytics {
+  const completed = uploads.filter((u) => u.status === "completed");
+  const durations = completed
+    .map((u) => u.processing_duration_ms)
+    .filter((ms): ms is number => ms != null && ms > 0);
+  const avgProcessingMs =
+    durations.length > 0 ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : null;
+  const creditsUsed = completed.length;
+  const creditsAllocated = Math.max(creditsRemaining + creditsUsed, defaultCreditsForPlan(plan));
+
+  return {
+    creditsRemaining,
+    creditsUsed,
+    creditsAllocated,
+    totalProcessed: completed.length,
+    avgProcessingMs,
+    totalDownloads: uploads.reduce((sum, u) => sum + (u.download_count ?? 0), 0),
+  };
+}
+
 export const processBackgroundRemoval = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => inputSchema.parse(data))
   .handler(async ({ data }) => {
@@ -53,7 +113,7 @@ export const processBackgroundRemoval = createServerFn({ method: "POST" })
       }
 
       const json = (await res.json()) as {
-          choices?: Array<{ message?: { images?: Array<{ image_url?: { url?: string } }> } }>;
+        choices?: Array<{ message?: { images?: Array<{ image_url?: { url?: string } }> } }>;
       };
       const url = json.choices?.[0]?.message?.images?.[0]?.image_url?.url;
       if (!url) {
@@ -74,66 +134,126 @@ export const processBackgroundRemoval = createServerFn({ method: "POST" })
     }
   });
 
-const inMemoryUploads: Array<{
-  id: string;
-  filename: string | null;
-  original_url: string;
-  result_url: string | null;
-  status: string;
-  created_at: string;
-  size_bytes: number | null;
-  user_id?: string;
-}> = [];
-
 export const saveUpload = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => data as typeof inMemoryUploads[0])
+  .inputValidator((data: unknown) => saveUploadSchema.parse(data))
   .handler(async ({ data, context }) => {
-    const { userId } = context;
-    const uploadWithUser = { ...data, user_id: userId };
-    inMemoryUploads.unshift(uploadWithUser);
-    
-    // Keep max 50 recent items to avoid memory bloat
-    if (inMemoryUploads.length > 50) {
-      inMemoryUploads.pop();
+    const { userId, supabase } = context;
+    const status = data.status ?? "completed";
+
+    const { data: balance, error: balanceError } = await supabase.rpc("credit_balance", {
+      _user_id: userId,
+    });
+    if (balanceError) {
+      console.error("[saveUpload] balance error", balanceError);
+      return { ok: false as const, error: "Could not verify credits." };
     }
-    
-    // Save the image to the local filesystem
-    try {
-      const outputDir = path.join(process.cwd(), "processed_images");
-      if (!fs.existsSync(outputDir)) {
-        fs.mkdirSync(outputDir, { recursive: true });
-      }
-
-      if (data.result_url) {
-        let ext = data.filename ? path.extname(data.filename) : ".png";
-        if (!ext) ext = ".png";
-        
-        // Remove existing extension from filename to append proper suffix
-        const baseName = data.filename ? path.basename(data.filename, ext) : "image";
-        const fileName = `${baseName}_bg_removed_${data.id.slice(0,6)}${ext}`;
-        const filePath = path.join(outputDir, fileName);
-
-        if (data.result_url.startsWith("data:image")) {
-          // It's a base64 string
-          const base64Data = data.result_url.replace(/^data:image\/\w+;base64,/, "");
-          const buffer = Buffer.from(base64Data, "base64");
-          fs.writeFileSync(filePath, buffer);
-        } else if (data.result_url.startsWith("http")) {
-          // It's a URL (e.g. from webhook)
-          const res = await fetch(data.result_url);
-          if (res.ok) {
-            const arrayBuffer = await res.arrayBuffer();
-            const buffer = Buffer.from(arrayBuffer);
-            fs.writeFileSync(filePath, buffer);
-          }
-        }
-      }
-    } catch (err) {
-      console.error("[bg-remove] Failed to write image to local folder", err);
+    if (status === "completed" && Number(balance ?? 0) < 1) {
+      return { ok: false as const, error: NO_CREDITS_MESSAGE };
     }
 
-    return { ok: true };
+    const id = data.id ?? crypto.randomUUID();
+    const now = new Date().toISOString();
+
+    const row = {
+      id,
+      user_id: userId,
+      filename: data.filename ?? null,
+      original_url: storeUrl(data.original_url) || storeUrl(data.result_url ?? "") || "https://cutly.ai/placeholder",
+      result_url: data.result_url ? storeUrl(data.result_url) : null,
+      status,
+      size_bytes: data.size_bytes ?? null,
+      mime_type: data.mime_type ?? null,
+      source: "web" as const,
+      credits_used: 1,
+      completed_at: status === "completed" ? now : null,
+      processing_duration_ms: data.processing_duration_ms ?? null,
+      download_count: 0,
+    };
+
+    const { error } = await supabase.from("uploads").upsert(row, { onConflict: "id" });
+
+    if (error) {
+      console.error("[saveUpload] db error", error);
+      return { ok: false as const, error: error.message };
+    }
+
+    if (status === "completed") {
+      const { error: deductError } = await supabase.from("credits").insert({
+        user_id: userId,
+        delta: -1,
+        reason: "usage",
+        reference: id,
+      });
+      if (deductError) {
+        console.error("[saveUpload] deduct error", deductError);
+        await supabase.from("uploads").delete().eq("id", id);
+        return { ok: false as const, error: "Could not deduct credit. Try again." };
+      }
+    }
+
+    return {
+      ok: true as const,
+      upload: {
+        id,
+        filename: row.filename,
+        original_url: row.original_url,
+        result_url: row.result_url,
+        status: row.status,
+        created_at: data.created_at ?? now,
+        size_bytes: row.size_bytes,
+        processing_duration_ms: row.processing_duration_ms,
+        download_count: 0,
+      } satisfies UploadHistoryRow,
+    };
+  });
+
+export const renameUpload = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({ id: z.string().uuid(), filename: z.string().trim().min(1).max(255) }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { userId, supabase } = context;
+    const { data: updated, error } = await supabase
+      .from("uploads")
+      .update({ filename: data.filename })
+      .eq("id", data.id)
+      .eq("user_id", userId)
+      .select("id, filename")
+      .maybeSingle();
+
+    if (error) return { ok: false as const, error: error.message };
+    if (!updated) return { ok: false as const, error: "Upload not found." };
+    return { ok: true as const, filename: updated.filename };
+  });
+
+export const recordDownload = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const { userId, supabase } = context;
+
+    const { data: row, error: fetchError } = await supabase
+      .from("uploads")
+      .select("download_count")
+      .eq("id", data.id)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (fetchError || !row) {
+      return { ok: false as const, error: "Upload not found." };
+    }
+
+    const next = (row.download_count ?? 0) + 1;
+    const { error: updateError } = await supabase
+      .from("uploads")
+      .update({ download_count: next })
+      .eq("id", data.id)
+      .eq("user_id", userId);
+
+    if (updateError) return { ok: false as const, error: updateError.message };
+    return { ok: true as const, download_count: next };
   });
 
 export const getDashboardSummary = createServerFn({ method: "GET" })
@@ -141,26 +261,56 @@ export const getDashboardSummary = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { userId, supabase } = context;
 
-    // Fetch credits sum from DB
-    const { data: creditsData } = await supabase
-      .from("credits")
-      .select("delta")
-      .eq("user_id", userId);
-    
-    // Start brand new users with 5 free credits
-    const totalDeltas = (creditsData ?? []).reduce((acc: number, curr: any) => acc + (curr.delta ?? 0), 0);
-    const credits = creditsData && creditsData.length > 0 ? totalDeltas : 5;
+    const { data: creditsData } = await supabase.from("credits").select("delta").eq("user_id", userId);
 
-    // Fetch subscription
+    const totalDeltas = (creditsData ?? []).reduce((acc, curr) => acc + (curr.delta ?? 0), 0);
+
     const { data: sub } = await supabase
       .from("subscriptions")
       .select("plan, status, monthly_credits, current_period_end")
       .eq("user_id", userId)
       .maybeSingle();
 
+    const plan = sub?.plan ?? "free";
+    const credits =
+      creditsData && creditsData.length > 0 ? totalDeltas : defaultCreditsForPlan(plan);
+
+    const { data: uploads, error: uploadsError } = await supabase
+      .from("uploads")
+      .select(
+        "id, filename, original_url, result_url, status, created_at, size_bytes, processing_duration_ms, download_count",
+      )
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    if (uploadsError) {
+      console.error("[getDashboardSummary] uploads error", uploadsError);
+    }
+
+    const history: UploadHistoryRow[] = (uploads ?? []).map((u) => ({
+      id: u.id,
+      filename: u.filename,
+      original_url: u.original_url,
+      result_url: u.result_url,
+      status: u.status,
+      created_at: u.created_at,
+      size_bytes: u.size_bytes,
+      processing_duration_ms: u.processing_duration_ms,
+      download_count: u.download_count ?? 0,
+    }));
+
+    const analytics = computeAnalytics(history, credits, plan);
+
     return {
       credits,
-      uploads: inMemoryUploads.filter(u => u.user_id === userId),
-      subscription: sub as null | { plan: string; status: string; monthly_credits: number; current_period_end: string | null },
+      uploads: history,
+      analytics,
+      subscription: sub as null | {
+        plan: string;
+        status: string;
+        monthly_credits: number;
+        current_period_end: string | null;
+      },
     };
   });
